@@ -1,7 +1,5 @@
 package telran.multithreading.SymbolPrint;
 
-import javax.print.attribute.standard.NumberUpSupported;
-
 public class SymbolPrinter extends Thread {
 	
 	String string;

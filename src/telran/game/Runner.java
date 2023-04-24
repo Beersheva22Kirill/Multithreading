@@ -1,8 +1,5 @@
 package telran.game;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 public class Runner extends Thread {
 	
 	private static final int MIN_VALUE = 1;
@@ -22,8 +19,17 @@ public class Runner extends Thread {
 				e.printStackTrace();
 			}					
 		}
-		time = ChronoUnit.MILLIS.between(race.startRace, Instant.now());
-		race.setWinner(this);
+		
+		race.lock.lock(); // good solution
+		try {
+			race.setWinner(this);
+		} finally {
+			race.lock.unlock();
+		}
+		
+//		synchronized (race.lock) { \\ object "race.lock" in block "synchronized" works like a normal object. No blocking queue...
+//			race.setWinner(this);
+//		}
 		
 	}
 
@@ -40,6 +46,12 @@ public class Runner extends Thread {
 	public long getTime() {
 		return time;
 	}
+
+	public void setTime(long time) {
+		this.time = time;
+	}
+	
+	
 	
 	
 

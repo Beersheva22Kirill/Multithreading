@@ -6,8 +6,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import javax.swing.text.DateFormatter;
-
 public interface InputOutput {
 	
 	String readString(String promt);
