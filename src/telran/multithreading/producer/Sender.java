@@ -21,11 +21,6 @@ public class Sender extends Thread {
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
-//			try {
-//				sleep(10);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
 		}
 	}
 

@@ -1,21 +1,35 @@
 package telran.multithreading;
 
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import telran.multithreading.producer.Sender;
+
 public class MessageBox {
 	
 	Message message;
+	Lock lock = new ReentrantLock();
+	Condition waitingConsumer = lock.newCondition();
+	Condition waitingProducer = lock.newCondition();
 	
-	synchronized public String take(long idThread) throws InterruptedException {
-			while (!getPermission(idThread)) {
-				wait();
+	public Message take(long idThread) throws InterruptedException {
+		lock.lock();	
+		try {
+			while(message == null) {
+				waitingConsumer.await();
 			}
-			String res = message.getMessage();
+			Message res = message;
 			message = null;
-			notifyAll();
-
-		return res;
+			waitingProducer.signal();
+			return res;
+		} finally {
+			lock.unlock();
+		}
+			
 	}
 	
-	synchronized private boolean getPermission(long idThread) {
+	private boolean getPermission(long idThread) {
 		boolean res = false;
 				if (message != null && idThread % 2 == 0 && message.getNumberMessage() % 2 != 0) {
 					res = true;
@@ -26,18 +40,32 @@ public class MessageBox {
 		return res;
 	}
 
-	synchronized public void put(Message message) throws InterruptedException {
-		while (this.message != null) {
-			wait();
-			
+	public void put(Message message) throws InterruptedException {
+		lock.lock();	
+		try {
+			while(this.message != null) {
+				waitingProducer.await();
+			}
+			this.message = message;
+			waitingConsumer.signal();
+		} finally {
+			lock.unlock();
 		}
-		this.message = message;
-		notifyAll();		
 	}
 
-	public Message getMessage() {
-		return message;
+	public Message getMessage(long idThread) {
+		lock.lock();
+		try {
+			Message res = message;
+			message = null;
+			if (res != null) {
+				waitingProducer.signal();
+			}
+			return res;
+		} finally {
+			lock.unlock();
+		}
+		
 	}
-	
 	
 }
