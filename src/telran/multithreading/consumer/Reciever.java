@@ -1,13 +1,15 @@
 package telran.multithreading.consumer;
 
+import java.util.concurrent.BlockingQueue;
+
 import telran.multithreading.Message;
 import telran.multithreading.MessageBox;
 
 public class Reciever extends Thread {
 	
-	private MessageBox messageBox;
+	private BlockingQueue<Message> messageBox;
 	
-	public Reciever(MessageBox messageBox) {
+	public Reciever(BlockingQueue<Message> messageBox) {
 		//setDaemon(true);
 		this.messageBox = messageBox;
 	}
@@ -17,13 +19,13 @@ public class Reciever extends Thread {
 		while(true) {
 			Message message;
 			try {
-				message = messageBox.take(getId());
+				message = messageBox.take();
 				System.out.printf("Thread ID: %s; Recive message: %s\n",getId(), message.getMessage());
 
 			} catch (InterruptedException e) {
 				
 				do {
-					message = messageBox.getMessage(getId());
+					message = messageBox.poll();
 					if (message != null) {
 						System.out.printf("Thread ID: %s; Recive message: %s\n",getId(), message.getMessage());
 					} 

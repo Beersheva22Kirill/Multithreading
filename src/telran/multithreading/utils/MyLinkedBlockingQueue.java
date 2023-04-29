@@ -3,6 +3,7 @@ package telran.multithreading.utils;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -28,149 +29,272 @@ public class MyLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
 	@Override
 	public E remove() {
+		lock.lock();
 		E res = null;
 		try {
-			
-		} catch (Exception e) {
-			// TODO: handle exception
+			if (isEmpty()) {
+				throw new NullPointerException();
+			}
+			res = list.removeFirst();
+			prodWait.signal();
+		} finally {
+			lock.unlock();
 		}
-		if (list.isEmpty()) {
-			throw new NullPointerException();
-		}
-		// TODO Auto-generated method stub
-		return null;
+		return res;
 	}
 
 	@Override
 	public E poll() {
-		// TODO Auto-generated method stub
-		return null;
+		E res = null;
+		lock.lock();
+		try {
+			res = list.poll();
+			if (res != null) {
+			prodWait.signal();
+			}
+				
+		} finally {
+			lock.unlock();
+		}
+		return res;
 	}
 
 	@Override
 	public E element() {
-		// TODO Auto-generated method stub
-		return null;
+		lock.lock();
+		E res = null;
+		try {
+			res = list.element();
+		} finally {
+			lock.unlock();
+		}
+		return res;
 	}
 
 	@Override
 	public E peek() {
-		// TODO Auto-generated method stub
-		return null;
+		lock.lock();
+		E res = null;
+		try {
+			res = list.peek();
+		} finally {
+			lock.unlock();
+		}
+		return res;
 	}
 
 	@Override
 	public int size() {
-		// TODO Auto-generated method stub
-		return 0;
+		
+		return list.size();
 	}
 
 	@Override
 	public boolean isEmpty() {
-		// TODO Auto-generated method stub
-		return false;
+		
+		return list.size() == 0;
 	}
 
 	@Override
 	public Iterator<E> iterator() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return list.iterator();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Object[] toArray() {
-		// TODO Auto-generated method stub
-		return null;
+		lock.lock();
+	try {
+		return (E[]) list.toArray();
+	} finally {
+		lock.unlock();
+	}
+		
 	}
 
 	@Override
 	public <T> T[] toArray(T[] a) {
-		// TODO Auto-generated method stub
-		return null;
+		lock.lock();
+		try {
+			return list.toArray(a);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			return list.containsAll(c);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
 	public boolean addAll(Collection<? extends E> c) {
-		// TODO Auto-generated method stub
-		return false;
+			for (E e : c) {
+				list.add(e);
+			}
+		return !c.isEmpty();
 	}
 
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			list.removeAll(c);
+			prodWait.signal();
+		} finally {
+			lock.unlock();
+		}
+			
+		return c.isEmpty();
 	}
 
 	@Override
 	public boolean retainAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			list.retainAll(c);
+		} finally {
+			lock.unlock();
+		}
+		return !isEmpty();
 	}
 
 	@Override
 	public void clear() {
-		// TODO Auto-generated method stub
-
+		removeAll(list);
 	}
 
 	@Override
 	public boolean add(E e) {
-		// TODO Auto-generated method stub
-		return false;
+		boolean res = false;
+		lock.lock();
+		try {
+			if (list.size() == limit) {
+				throw new IllegalStateException();
+			}
+			res = list.add(e);
+			consWait.signal();
+		} finally {
+			lock.unlock();
+		}
+		return res;
 	}
 
 	@Override
 	public boolean offer(E e) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			boolean res = false;
+			if (list.size() < limit) {
+				res = list.offer(e);
+				if (res) {
+					prodWait.signal();
+				}
+			}
+			return res;
+		} finally {
+			lock.unlock();
+		}
+		
 	}
 
 	@Override
 	public void put(E e) throws InterruptedException {
-		// TODO Auto-generated method stub
+		lock.lock();
+		try {
+			while (list.size() == limit) {
+				prodWait.await();
+			}
+			list.add(e);
+			consWait.signal();
+		} finally {
+			lock.unlock();
+		}
 
 	}
 
 	@Override
 	public boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			if (list.size() == limit ) {
+				consWait.await(timeout, unit);
+			}
+			return add(e);
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
 	public E take() throws InterruptedException {
-		// TODO Auto-generated method stub
-		return null;
+		lock.lock();
+		E res = null;
+		try {
+			while (isEmpty()) {
+				consWait.await();
+			}
+			res = list.removeFirst();
+			prodWait.signal();
+		} finally {
+			lock.unlock();
+		}
+		return res;
 	}
 
 	@Override
 	public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-		// TODO Auto-generated method stub
+		lock.lock();
+		try {
+			if (isEmpty()) {
+				consWait.await(timeout, unit);
+			}
+			poll();
+		} finally {
+			lock.unlock();
+		}
 		return null;
 	}
 
 	@Override
 	public int remainingCapacity() {
-		// TODO Auto-generated method stub
-		return 0;
+		lock.lock();
+		try {
+			return limit - list.size();
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	@Override
 	public boolean remove(Object o) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		boolean res = false;
+		try {
+			res = list.remove(o);
+			prodWait.signal();
+			return res;
+		} finally {
+			lock.unlock();
+		}
+
 	}
 
 	@Override
 	public boolean contains(Object o) {
-		// TODO Auto-generated method stub
-		return false;
+		lock.lock();
+		try {
+			return list.contains(o);
+		} finally {
+			lock.unlock();
+		}
+		
 	}
 
 	@Override

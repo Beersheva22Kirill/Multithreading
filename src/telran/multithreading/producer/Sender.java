@@ -1,14 +1,16 @@
 package telran.multithreading.producer;
 
+import java.util.concurrent.BlockingQueue;
+
 import telran.multithreading.Message;
 import telran.multithreading.MessageBox;
 
 public class Sender extends Thread {
 
-	private MessageBox messageBox;
+	private BlockingQueue<Message> messageBox;
 	private int nMasseges;
 
-	public Sender(MessageBox messageBox, int nMasseges) {
+	public Sender(BlockingQueue<Message> messageBox, int nMasseges) {
 		this.messageBox = messageBox;
 		this.nMasseges = nMasseges;
 	}
