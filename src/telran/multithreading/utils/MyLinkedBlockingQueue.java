@@ -6,12 +6,14 @@ import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MyLinkedBlockingQueue<E> implements BlockingQueue<E> {
-
+	
+	private final AtomicInteger count = new AtomicInteger();
 	LinkedList<E> list = new LinkedList<>();
 	int limit = Integer.MAX_VALUE;
 	Lock lock = new ReentrantLock();
@@ -91,8 +93,8 @@ public class MyLinkedBlockingQueue<E> implements BlockingQueue<E> {
 
 	@Override
 	public boolean isEmpty() {
-		
-		return list.size() == 0;
+
+		return size() == 0;
 	}
 
 	@Override
@@ -240,7 +242,7 @@ public class MyLinkedBlockingQueue<E> implements BlockingQueue<E> {
 			while (isEmpty()) {
 				consWait.await();
 			}
-			res = list.removeFirst();
+			res = list.remove();
 			prodWait.signal();
 		} finally {
 			lock.unlock();

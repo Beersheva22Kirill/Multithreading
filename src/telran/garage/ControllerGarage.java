@@ -6,14 +6,14 @@ import java.util.concurrent.*;
 public class ControllerGarage extends Thread{
 	
 	static final int DEFAULT_MAX_QUEUE = 10;
-	static final int DEFAULT_COUNT_WORKERS = 10;
+	static final int DEFAULT_COUNT_WORKERS = 2;
 	
 	ControllerCar cars;
 	BlockingQueue<Car> carsForRecovery;
 
 	ArrayList<Worker> workers;
 	int countWorkers;
-	static long carRecovery;
+	long carRecovery;
 	long carNotRecovery;
 	long allTimeNotWork;
 	public static Object mutex = new Object();
@@ -29,7 +29,7 @@ public class ControllerGarage extends Thread{
 				try {
 					Car car = cars.cars.take();
 						if (!carsForRecovery.offer(car)) {
-							System.out.println("Car: " + car.hashCode() + " rejected");
+							System.out.println("Car: " + car.hashCode() + " rejected. Size queue: " +  carsForRecovery.size());
 							carNotRecovery++;
 						}
 				} catch (InterruptedException e) {
@@ -37,28 +37,34 @@ public class ControllerGarage extends Thread{
 					for (Worker worker : workers) {
 						worker.interrupt();
 						}
-					
-					System.out.println("-----------Result-----------");
 					for (Worker worker : workers) {
-						allTimeNotWork += worker.timeNotWork;
-						System.out.printf("Worker ID: %s didn't work %s min\n",worker.id,worker.timeNotWork);
+						try {
+							worker.join();
+						} catch (InterruptedException e1) {
+							e1.printStackTrace();
+						}
 					}
-					System.out.printf("Total non working time: %s min\n", allTimeNotWork);
+					
+					System.out.println("\n-----------Result---------------");
+					for (Worker worker : workers) {
+						allTimeNotWork += worker.nonWorkingTime;
+						System.out.printf("Worker ID: %s didn't work %s min\n",worker.id,worker.nonWorkingTime);
+					}
+					System.out.printf("\nTotal non working time: %s min\n", allTimeNotWork);
 					System.out.printf("Total count of repaired cars: %s\n", carRecovery);
 					System.out.println("Count of rejected cars: " + carNotRecovery);
 					break;
 				} 
 			}	
-			System.out.println("Garage finished work");
+			System.out.println("Garage finished work\n");
 			 
 	}
 
-	
 	public long getCarRecovery() {
 		return carRecovery;
 	}
 
-	public static void setCarRecovery() {
+	public void setCarRecovery() {
 		synchronized (mutex) {
 			carRecovery++;
 		}

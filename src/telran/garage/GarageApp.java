@@ -17,6 +17,7 @@ public static final long TIME_WORK = 480;
 		}
 	
 		garage.interrupt();
+		
 		garage.join();
 		
 		System.out.println("Application closed");
